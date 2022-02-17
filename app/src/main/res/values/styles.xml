@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="MarkerTitleStyle">
+        <item name="android:textSize">@dimen/big_text</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:layout_marginHorizontal">@dimen/small_space</item>
+    </style>
+
+    <style name="MarkerPositionStyle" parent="MarkerTitleStyle">
+        <item name="android:textSize">@dimen/normal_text</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+</resources>
