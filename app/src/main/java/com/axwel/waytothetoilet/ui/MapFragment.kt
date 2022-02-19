@@ -9,8 +9,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import com.arellomobile.mvp.presenter.InjectPresenter
 import com.axwel.waytothetoilet.R
 import com.axwel.waytothetoilet.databinding.FragmentMapBinding
+import com.axwel.waytothetoilet.domain.MapsPresenter
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -21,12 +23,14 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 
 class MapFragment : Fragment(), OnMapReadyCallback, MapsView {
-    private lateinit var map: GoogleMap
-    private var lastKnownLocation: Location? = null
-    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
-    private val defaultLocation = LatLng(33.8523341, 151.2106085)
-    private var binding: FragmentMapBinding? = null
+    var map: GoogleMap? = null
+    var lastKnownLocation: Location? = null
+    lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+    val defaultLocation = LatLng(33.8523341, 151.2106085)
+    var binding: FragmentMapBinding? = null
 
+    @InjectPresenter
+    lateinit var mapsPresenter: MapsPresenter
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -43,33 +47,53 @@ class MapFragment : Fragment(), OnMapReadyCallback, MapsView {
         return binding!!.root
     }
 
+    override fun onResume() {
+        super.onResume()
+        putMarkers()
+    }
+
+    private fun putMarkers() {
+        val markers = mapsPresenter.getMarkers()
+        markers.forEach {
+            map?.addMarker(it)
+        }
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        mapsPresenter = context?.let { MapsPresenter(it.applicationContext) }!!
+    }
+
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
         getDeviceLocation()
         configureButtons()
-
-        map.setOnMapLongClickListener {
+        putMarkers()
+        map?.setOnMapLongClickListener {
             addMarker(it)
         }
-        map.setOnMarkerClickListener { marker ->
-            marker.remove()
+        map?.setOnMarkerClickListener { marker ->
+            marker.showInfoWindow()
             true
         }
     }
 
     private fun addMarker(latLng: LatLng) {
-        map.addMarker(
-            MarkerOptions()
-                .position(latLng)
-                .title("Toilet marker")
-                .flat(true)
+        val marker = MarkerOptions()
+            .position(latLng)
+            .title("Marker")
+            .flat(true)
+        mapsPresenter.saveMarker(marker)
+
+        map?.addMarker(
+            marker
         )
 
     }
 
     @SuppressLint("MissingPermission")
     private fun configureButtons() {
-        map.apply {
+        map?.apply {
             isMyLocationEnabled = true
             uiSettings.apply {
                 isCompassEnabled = true
@@ -88,7 +112,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, MapsView {
                 if (task.isSuccessful) {
                     lastKnownLocation = task.result
                     if (lastKnownLocation != null) {
-                        map.moveCamera(
+                        map?.moveCamera(
                             CameraUpdateFactory.newLatLngZoom(
                                 LatLng(
                                     lastKnownLocation!!.latitude,
@@ -98,11 +122,11 @@ class MapFragment : Fragment(), OnMapReadyCallback, MapsView {
                         )
                     }
                 } else {
-                    map.moveCamera(
+                    map?.moveCamera(
                         CameraUpdateFactory
                             .newLatLngZoom(defaultLocation, 15F)
                     )
-                    map.uiSettings.isMyLocationButtonEnabled = false
+                    map?.uiSettings?.isMyLocationButtonEnabled = false
                 }
             }
         } catch (e: SecurityException) {
@@ -111,8 +135,17 @@ class MapFragment : Fragment(), OnMapReadyCallback, MapsView {
     }
 
     override fun updateMarkers(list: List<MarkerOptions>) {
-        map.clear()
-        list.forEach { map.addMarker(it) }
+        map?.clear()
+        list.forEach { map?.addMarker(it) }
+    }
+
+    companion object {
+        val TAG: String =
+            MapFragment::class.java.canonicalName ?: MapFragment::class.java.simpleName
+
+        fun newInstance(): MapFragment {
+            return MapFragment()
+        }
     }
 
 }

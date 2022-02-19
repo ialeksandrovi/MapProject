@@ -11,4 +11,11 @@
         <item name="android:textSize">@dimen/normal_text</item>
         <item name="android:textStyle">normal</item>
     </style>
+
+    <style name="RemoveButtonStyle">
+        <item name="android:text">@string/marker_remove</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:background">@color/red</item>
+        <item name="android:textSize">@dimen/normal_text</item>
+    </style>
 </resources>
